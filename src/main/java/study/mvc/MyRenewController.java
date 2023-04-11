@@ -70,6 +70,7 @@ public class MyRenewController {
 //        return result;
 //    }
 
+    //RequestParam
     @GetMapping(value = "/echo-repeat", produces = MediaType.TEXT_PLAIN_VALUE)
     public String echoRepeat(@RequestParam("word") String word,
                              @RequestParam("count") Integer count)
