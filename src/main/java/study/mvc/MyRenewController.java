@@ -1,10 +1,21 @@
 package study.mvc;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+
 @RestController //해당 컨트롤러가 RESTful 웹 서비스를 처리하는 컨트롤러임을 명시합니다.
 @RequestMapping("/renew") //해당 메소드나 클래스가 어떤 요청 URI에 매핑되는지를 지정합니다.
 public class MyRenewController {
@@ -80,5 +91,44 @@ public class MyRenewController {
             result += word;
         }
         return result;
+    }
+
+    @GetMapping(value = "/dog-image", produces = MediaType.IMAGE_JPEG_VALUE)
+    // 바이트배열을 응답 메시지인 바디 영역에 보내기만 하면 된다.
+    public byte[] dogImage() throws IOException {
+    // resources 폴더의 static 폴더에 이미지 있어야 함
+        File file = ResourceUtils.getFile("classpath:static/dog.jpg");
+    // 파일의 바이트 데이터 모두 읽어오기
+        byte[] bytes = Files.readAllBytes(file.toPath());
+        return bytes;
+    }
+
+    @GetMapping(value = "/dog-image-file", produces =
+            MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    // 헤더를 직접 조정하고 싶은 경우 ResponseEntity 타입을 반환하도록 설정 가능
+    // (꺽쇠 안에는 응답 메시지의 바디 데이터에 포함될 타입을 지정)
+    public ResponseEntity<byte[]> dogImageFile() throws IOException {
+        File file = ResourceUtils.getFile("classpath:static/dog.jpg");
+        byte[] bytes = Files.readAllBytes(file.toPath());
+        String filename = "dog.jpg";
+        // 헤더 값 설정
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=" + filename);
+        // ResponseEntity는 바디, 헤더 영역과 상태코드를 직접 지정해주고 싶을 때 사용한다.
+        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+    }
+
+    private ArrayList<String> wordList = new ArrayList<>();
+    // 위의 ArrayList에 단어를 추가하는 메서드
+    @PostMapping(value = "/words")
+    // 요청하는 요청 본문을 requestBody라고 함.
+    public void addWord(@RequestBody String bodyString) {
+        String[] words = bodyString.split("\n");
+        for(String w: words) wordList.add(w.trim());
+    }
+    // 저장된 모든 단어 보여주기
+    @GetMapping("/words")
+    public String showWords() {
+        return String.join(",", wordList);
     }
 }
