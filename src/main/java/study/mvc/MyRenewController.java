@@ -2,19 +2,64 @@ package study.mvc;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+
+class Api {
+    private String quote;
+    public String getQuote() {return quote;}
+    public String setQuote() { this.quote = quote;}
+}
+
+class Student {
+    private String id;
+    private String name;
+    private Integer age;
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public Integer getAge() { return age; }
+
+    public void setValue1(String id) { this.id = id; }
+    public void setValue2(String name) { this.name = name; }
+    public void setValue3(Integer age) { this.age = age; }
+}
+
+class MyJsonData {
+    private String value1;
+    private Integer value2;
+    public String getValue1() { return value1; }
+    public Integer getValue2() { return value2; }
+    public void setValue1(String value1) { this.value1 = value1; }
+    public void setValue2(Integer value2) { this.value2 = value2; }
+}
+
+// 커맨드 객체로 사용될 클래스 정의
+class MyCommandObject {
+    private String value1;
+    private Integer value2;
+    // 반드시 세터 메서드가 있어야 함
+    public void setValue1(String value1) { this.value1 = value1; }
+    public void setValue2(Integer value2) { this.value2 = value2; }
+
+    // 오른쪽 클릭해서 Generate - toString()
+    @Override
+    public String toString() {
+        return "MyCommandObject{" +
+                "value1='" + value1 + '\'' +
+                ", value2=" + value2 +
+                '}';
+    }
+}
 
 @RestController //해당 컨트롤러가 RESTful 웹 서비스를 처리하는 컨트롤러임을 명시합니다.
 @RequestMapping("/renew") //해당 메소드나 클래스가 어떤 요청 URI에 매핑되는지를 지정합니다.
@@ -130,5 +175,90 @@ public class MyRenewController {
     @GetMapping("/words")
     public String showWords() {
         return String.join(",", wordList);
+    }
+
+    @PostMapping("/test")
+    // @ModelAttribute를 타입 앞에 붙여주고 메서드의 파라미터 값으로 전달되게 함
+    // 커맨드 객체. MyCommandObject는 첫번째는 쿼리 스트링, 두번째는 폼을 가지고 만들 수 있음.
+    public String commandObjectTest(@ModelAttribute MyCommandObject myCommandObject)
+    {
+        return myCommandObject.toString();
+    }
+
+
+    // 요청 메시지의 Content-Type이 "applicaion/json"인 요청을 받아들이기 위해서 consumes를 MediaType.APPLICATION_JSON_VALUE로 설정
+    // 응답 메시지의 Content-Type이 "applicaion/json"이므로 produces를MediaType.APPLICATION_JSON_VALUE로 설정
+    @PostMapping(value = "/json-test",
+            // Content-type Json 타입 이다.
+            consumes = MediaType.APPLICATION_JSON_VALUE, //consumes: 요청 메시지의 content-type이 json(역질렬화)
+            produces = MediaType.APPLICATION_JSON_VALUE)  // produces: 응답 메시지의 content-type이 json(직렬화)
+    // 반환 타입으로 MyJsonData를 설정하였고 ResponseBody 어노테이션을 통해 해당 값이 메시지컨버터를 통해서 직렬화되어야 함을 알림
+    @ResponseBody //응답 메시지의 데이터값
+    // RequestBody 어노테이션을 통해 요청 메시지의 바디에 포함된 JSON 문자열이 메시지 컨버터를통해서 역직렬화되어 객체로 변환되어야 함을 알림
+    public MyJsonData jsonTest(@RequestBody MyJsonData myJsonData) {
+        System.out.println(myJsonData);
+        return myJsonData;
+    }
+
+//test01
+    @PostMapping(value="/student-test",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public Student student(@RequestBody Student student){
+        System.out.println(student);
+        return student;
+    }
+    // test02
+//    @PostMapping(value="/student-test",
+//            consumes = MediaType.APPLICATION_JSON_VALUE,
+//            produces = MediaType.TEXT_PLAIN_VALUE)
+//    @ResponseBody
+//    public String student(@RequestBody Student student){
+//        System.out.println(student);
+//        return student.toString();
+//    }
+
+    @GetMapping(value = "/github/{user}", produces =
+            MediaType.TEXT_PLAIN_VALUE)
+    public String githubUser(@PathVariable("user") String user) {
+        RestTemplate restTemplate = new RestTemplate();
+// 요청 메시지 생성 및 설정
+        // HttpsHeader를 지정할 객체
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        // Entity는 스프링에서 제공하는 응답, 요청 메시지를 객체화 한 것이다.
+        RequestEntity<String> requestEntity = new RequestEntity<>(
+                null, null, HttpMethod.GET,
+                URI.create("https://api.github.com/users/" + user));
+// 응답 메시지
+        // exchange에서 요청을 하는 것이다.
+        ResponseEntity<String> response = restTemplate.exchange(requestEntity,
+                String.class);
+        String responseBody = response.getBody();
+        return responseBody;
+    }
+
+        @GetMapping(value = "/api", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String apiStory() {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        RequestEntity<String> requestEntity = new RequestEntity<>(
+                null, null, HttpMethod.GET,
+                URI.create("https://api.kanye.rest"));
+// 응답 메시지
+        // exchange에서 요청을 하는 것이다.
+        ResponseEntity<String> response = restTemplate.exchange(requestEntity,
+                String.class);
+        String responseBody = response.getBody();
+        return responseBody;
+    }
+    @PostMapping(value="/api-test",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public Api api(){
+
+        return student;
     }
 }
