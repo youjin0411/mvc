@@ -18,7 +18,9 @@ import java.util.stream.Collectors;
 class Api {
     private String quote;
     public String getQuote() {return quote;}
-    public String setQuote() { this.quote = quote;}
+    public String setQuote() { this.quote = quote;
+        return null;
+    }
 }
 
 class Student {
@@ -254,11 +256,10 @@ public class MyRenewController {
         String responseBody = response.getBody();
         return responseBody;
     }
-    @PostMapping(value="/api-test",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public Api api(){
 
-        return student;
+    @PostMapping(value = "/words", produces = MediaType.TEXT_PLAIN_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    public String Hello() {
+        return "<h1>Hello World!</h1>";
     }
 }
