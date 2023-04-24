@@ -26,4 +26,13 @@ public class TestController {
         }
         return str;
     }
+
+    // 결과로 문자열 12 반환
+    @GetMapping("/mul")
+    public String reqest3(@RequestParam("num1") Integer num1,
+                          @RequestParam("num2") Integer num2) {
+        int num = num1 * num2;
+        return String.valueOf(num);
+    }
+
 }
